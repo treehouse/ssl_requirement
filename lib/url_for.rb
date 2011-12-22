@@ -1,4 +1,5 @@
 require 'action_dispatch/routing/route_set'
+require 'active_support/core_ext/module/aliasing'
 
 module ActionDispatch
   module Routing
@@ -44,6 +45,9 @@ module ActionDispatch
       end
 
       # want with_secure_option to get run first (so chain it last)
+      # Can't use method overriding using modules as RoutSet#url_for is defined directly in
+      # the class and not in a (Base) module. See http://stackoverflow.com/questions/3689736/rails-3-alias-method-chain-still-used
+      # for a good discussion.
       alias_method_chain :url_for, :non_ssl_host
       alias_method_chain :url_for, :secure_option
     end

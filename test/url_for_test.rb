@@ -1,85 +1,77 @@
 $:.unshift(File.dirname(__FILE__) + '/../lib')
 
-require 'rubygems'
 require 'test/unit'
 require 'action_controller'
-require 'action_controller/test_process'
 
 require "ssl_requirement"
 
-# Show backtraces for deprecated behavior for quicker cleanup.
-ActiveSupport::Deprecation.debug = true
-ActionController::Base.logger = nil
-ActionController::Routing::Routes.reload rescue nil
-
 class UrlRewriterTest < Test::Unit::TestCase
   def setup
-    @request = ActionController::TestRequest.new
-    @params = {}
-    @rewriter = ActionController::UrlRewriter.new(@request, @params)
-
+    @routes = ActionDispatch::Routing::RouteSet.new
+    @routes.default_url_options[:host] = 'test.host'
+    @routes.draw do
+      match ':controller(/:action(/:id(.:format)))'
+    end
     @ssl_host_override = "www.example.com:80443"
     @non_ssl_host_override = "www.example.com:8080"
 
     SslRequirement.ssl_host = nil
     SslRequirement.non_ssl_host = nil
-    
-    # puts @url_rewriter.to_s
   end
 
   def test_rewrite_secure_false
     SslRequirement.disable_ssl_check = false
     assert_equal('http://test.host/c/a',
-      @rewriter.rewrite(:controller => 'c', :action => 'a', :secure => false)
+      @routes.url_for(:controller => 'c', :action => 'a', :secure => false)
     )
     assert_equal('/c/a',
-      @rewriter.rewrite(:controller => 'c', :action => 'a', :secure => false, 
+      @routes.url_for(:controller => 'c', :action => 'a', :secure => false,
                         :only_path => true)
     )
-    
+
     SslRequirement.disable_ssl_check = true
     assert_equal('http://test.host/c/a',
-      @rewriter.rewrite(:controller => 'c', :action => 'a', :secure => false)
+      @routes.url_for(:controller => 'c', :action => 'a', :secure => false)
     )
     assert_equal('/c/a',
-      @rewriter.rewrite(:controller => 'c', :action => 'a', :secure => false,
+      @routes.url_for(:controller => 'c', :action => 'a', :secure => false,
                         :only_path => true)
     )
   end
-  
+
   def test_rewrite_secure_true
     SslRequirement.disable_ssl_check = false
     assert_equal('https://test.host/c/a',
-      @rewriter.rewrite(:controller => 'c', :action => 'a', :secure => true)
+      @routes.url_for(:controller => 'c', :action => 'a', :secure => true)
     )
     assert_equal('https://test.host/c/a',
-      @rewriter.rewrite(:controller => 'c', :action => 'a', :secure => true, :only_path => true)
+      @routes.url_for(:controller => 'c', :action => 'a', :secure => true, :only_path => true)
     )
-    
+
     SslRequirement.disable_ssl_check = true
     assert_equal('http://test.host/c/a',
-      @rewriter.rewrite(:controller => 'c', :action => 'a', :secure => true)
+      @routes.url_for(:controller => 'c', :action => 'a', :secure => true)
     )
     assert_equal('/c/a',
-      @rewriter.rewrite(:controller => 'c', :action => 'a', :secure => true, :only_path => true)
+      @routes.url_for(:controller => 'c', :action => 'a', :secure => true, :only_path => true)
     )
   end
-  
+
   def test_rewrite_secure_not_specified
     SslRequirement.disable_ssl_check = false
     assert_equal('http://test.host/c/a',
-      @rewriter.rewrite(:controller => 'c', :action => 'a')
+      @routes.url_for(:controller => 'c', :action => 'a')
     )
     assert_equal('/c/a',
-      @rewriter.rewrite(:controller => 'c', :action => 'a', :only_path => true)
+      @routes.url_for(:controller => 'c', :action => 'a', :only_path => true)
     )
-    
+
     SslRequirement.disable_ssl_check = true
     assert_equal('http://test.host/c/a',
-      @rewriter.rewrite(:controller => 'c', :action => 'a')
+      @routes.url_for(:controller => 'c', :action => 'a')
     )
     assert_equal('/c/a',
-      @rewriter.rewrite(:controller => 'c', :action => 'a', :only_path => true)
+      @routes.url_for(:controller => 'c', :action => 'a', :only_path => true)
     )
   end
 
@@ -89,10 +81,10 @@ class UrlRewriterTest < Test::Unit::TestCase
     SslRequirement.disable_ssl_check = false
     SslRequirement.ssl_host = @ssl_host_override
     assert_equal("https://#{@ssl_host_override}/c/a",
-                 @rewriter.rewrite(:controller => 'c', :action => 'a', 
+                 @routes.url_for(:controller => 'c', :action => 'a',
                                    :secure => true))
     assert_equal("https://#{@ssl_host_override}/c/a",
-                 @rewriter.rewrite(:controller => 'c', :action => 'a',
+                 @routes.url_for(:controller => 'c', :action => 'a',
                                    :secure => true, :only_path => true))
     SslRequirement.ssl_host = nil
   end
@@ -103,17 +95,17 @@ class UrlRewriterTest < Test::Unit::TestCase
 
     # with secure option
     assert_equal("http://#{@non_ssl_host_override}/c/a",
-                 @rewriter.rewrite(:controller => 'c', :action => 'a',
+                 @routes.url_for(:controller => 'c', :action => 'a',
                                    :secure => false))
     assert_equal("/c/a",
-                 @rewriter.rewrite(:controller => 'c', :action => 'a', 
+                 @routes.url_for(:controller => 'c', :action => 'a',
                                    :secure => false, :only_path => true))
 
     # without secure option
     assert_equal("http://#{@non_ssl_host_override}/c/a",
-                 @rewriter.rewrite(:controller => 'c', :action => 'a'))
+                 @routes.url_for(:controller => 'c', :action => 'a'))
     assert_equal("/c/a",
-                 @rewriter.rewrite(:controller => 'c', :action => 'a', 
+                 @routes.url_for(:controller => 'c', :action => 'a',
                                    :only_path => true))
     SslRequirement.non_ssl_host = nil
   end
@@ -124,30 +116,30 @@ class UrlRewriterTest < Test::Unit::TestCase
 
     # with secure option
     assert_equal("http://#{@non_ssl_host_override}/c/a",
-                 @rewriter.rewrite(:controller => 'c', :action => 'a',
+                 @routes.url_for(:controller => 'c', :action => 'a',
                                    :secure => false))
     assert_equal("/c/a",
-                 @rewriter.rewrite(:controller => 'c', :action => 'a', 
+                 @routes.url_for(:controller => 'c', :action => 'a',
                                    :secure => false, :only_path => true))
 
     # without secure option
     assert_equal("http://#{@non_ssl_host_override}/c/a",
-                 @rewriter.rewrite(:controller => 'c', :action => 'a'))
+                 @routes.url_for(:controller => 'c', :action => 'a'))
     assert_equal("/c/a",
-                 @rewriter.rewrite(:controller => 'c', :action => 'a', 
+                 @routes.url_for(:controller => 'c', :action => 'a',
                                    :only_path => true))
     SslRequirement.non_ssl_host = nil
   end
-  
+
   # tests for ssl_host overriding with Procs
-  
+
   def test_rewrite_secure_with_ssl_host_proc
     SslRequirement.disable_ssl_check = false
     SslRequirement.ssl_host = Proc.new do
       @ssl_host_override
     end
     assert_equal("https://#{@ssl_host_override}/c/a",
-                 @rewriter.rewrite(:controller => 'c', :action => 'a', 
+                 @routes.url_for(:controller => 'c', :action => 'a',
                                    :secure => true))
     SslRequirement.ssl_host = nil
   end
@@ -159,11 +151,11 @@ class UrlRewriterTest < Test::Unit::TestCase
     end
     # with secure option
     assert_equal("http://#{@non_ssl_host_override}/c/a",
-                 @rewriter.rewrite(:controller => 'c', :action => 'a',
+                 @routes.url_for(:controller => 'c', :action => 'a',
                                    :secure => false))
     # without secure option
     assert_equal("http://#{@non_ssl_host_override}/c/a",
-                 @rewriter.rewrite(:controller => 'c', :action => 'a'))
+                 @routes.url_for(:controller => 'c', :action => 'a'))
     SslRequirement.non_ssl_host = nil
   end
 end

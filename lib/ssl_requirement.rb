@@ -1,4 +1,5 @@
 require "#{File.dirname(__FILE__)}/url_for"
+require "active_support/core_ext/class"
 
 # Copyright (c) 2005 David Heinemeier Hansson
 #
@@ -127,7 +128,7 @@ module SslRequirement
     request_port = request.port
 
     if ssl
-      "#{(ssl_host || request_host)}#{determine_port_string(ssl_port || request_port)}"
+      "#{(ssl_host || request_host)}#{determine_port_string(request_port || ssl_port)}"
     else
       "#{(non_ssl_host || request_host)}#{determine_port_string(request_port)}"
     end

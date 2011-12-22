@@ -1,3 +1,13 @@
+Installing
+==========
+
+This version of SSL Requirement is **only** compatible with Rails 3.x.  To install add the following line to your project's
+`Gemfile`:
+
+    gem 'bartt-ssl_requirement', '~>1.4.0', :require => 'ssl_requirement'
+
+`bartt-ssl_requirement` is compatible with ruby 1.8.7 and 1.9.x.
+
 SSL Requirement
 ===============
 
@@ -32,11 +42,11 @@ Example:
       end
     end
 
-If a majority (or all) of your actions require SSL, then use ssl_exceptions instead of ssl_required.
-You can list out the actions that you do NOT want to be SSL protected. Calling ssl_exceptions without
+If a majority (or all) of your actions require SSL, then use `ssl_exceptions` instead of `ssl_required`.
+You can list out the actions that you do NOT want to be SSL protected. Calling `ssl_exceptions` without
 any actions listed will make ALL actions SSL protected.
 
-To allow SSL for any action  use ssl_allowed and pass in :all
+To allow SSL for any action `use ssl_allowed` and pass in `:all`
 
 Example:
 
@@ -47,11 +57,11 @@ Example:
       ssl_allowed :all
     end
 
-You can overwrite the protected method ssl_required? to rely on other things
+You can overwrite the protected method `ssl_required?` to rely on other things
 than just the declarative specification. Say, only premium accounts get SSL.
 
 For SSL domains that differ from the domain of the redirecting site, add the
-following code to development.rb / test.rb / production.rb:
+following code to `development.rb` / `test.rb` / `production.rb`:
 
     # Redirects to https://secure.example.com instead of the default
     # https://www.example.com.
@@ -60,7 +70,7 @@ following code to development.rb / test.rb / production.rb:
     end
 
 For non-SSL domains that differ from domain of redirecting site, add the
-following code to development.rb / test.rb / production.rb:
+following code to `development.rb` / `test.rb` / `production.rb`:
 
   # Redirects to http://nonsecure.example.com instead of the default
   # http://www.example.com.
@@ -68,7 +78,7 @@ following code to development.rb / test.rb / production.rb:
     SslRequirement.non_ssl_host = 'nonsecure.example.com'
   end
 
-You can also use a Proc to determine the ssl_host or non_ssl_host on the fly:
+You can also use a Proc to determine the `ssl_host` or `non_ssl_host` on the fly:
 
   config.after_initialize do
       SslRequirement.ssl_host = Proc.new do
@@ -76,7 +86,7 @@ You can also use a Proc to determine the ssl_host or non_ssl_host on the fly:
     end
     end
 
-You are able to turn disable ssl redirects by adding the following environment configuration file:
+You are able to turn off ssl redirects by adding the following environment configuration file:
 
     SslRequirement.disable_ssl_check = true
 
@@ -85,24 +95,24 @@ addng the following to the environment configuration file:
 
   SslRequirement.redirect_status = :moved_permanently
 
-P.S.: Beware when you include the SslRequirement module. At the time of
-inclusion, it'll add the before_filter that validates the declarations. Some
-times you'll want to run other before_filters before that. They should then be
+P.S.: Beware when you include the `SslRequirement` module. At the time of
+inclusion, it'll add the `before_filter` that validates the declarations. Some
+times you'll want to run other `before_filter`s before that. They should then be
 declared ahead of including this module.
 
 SSL URL Helper
 ==============
-This plugin also adds a helper a :secure option to url_for and named_routes. This property
-allows you to set a url as secure or not secure. It uses the disable_ssl_check to determine
+This plugin also adds a helper a `:secure` option to `url_for` and `named_routes`. This property
+allows you to set a url as secure or not secure. It uses the `disable_ssl_check` to determine
 if the option should be ignored or not so you can develop as normal. It also
-will obey if you override SslRequirement.ssl_host or
-SslRequirement.non_ssl_host (see above)
+will obey if you override `SslRequirement.ssl_host` or
+`SslRequirement.non_ssl_host` (see above)
 
 Here is an example of creating a secure url:
 
     <%= url_for(:controller => "c", :action => "a", :secure => true) %>
 
-If disable_ssl_check returns false url_for will return the following:
+If `disable_ssl_check` returns false `url_for` will return the following:
 
     https://yoursite.com/c/a
 
@@ -121,32 +131,6 @@ Furthermore, you can use the secure option in a named route to create a secure f
         <%= submit_tag "Login", :id => 'login_submit', :value => "", :alt => "Login" %>
       </p>
     <% end -%>
-
-Testing with Shoulda
-====================
-
-If you are using Shoulda, a few contexts and macros are provided:
-
-    class RegistrationsControllerTest < ActionController::TestCase
-      without_ssl_context do
-        context "GET to :new" do
-          setup do
-            get :new
-          end
-          should_redirect_to_ssl
-        end
-      end
-
-      with_ssl_context do
-        context "GET to :new" do
-          setup do
-            get :new
-          end
-          # your usual testing goes here
-        end
-      end
-    end
-
 
 Copyright
 =========

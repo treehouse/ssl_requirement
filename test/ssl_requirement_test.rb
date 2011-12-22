@@ -1,37 +1,11 @@
-require 'set'
-require 'rubygems'
-require 'active_support'
-begin
-  require 'action_controller'
-rescue LoadError
-  if ENV['ACTIONCONTROLLER_PATH'].nil?
-    abort <<MSG
-Please set the ACTIONCONTROLLER_PATH environment variable to the directory
-containing the action_controller.rb file.
-MSG
-  else
-    $LOAD_PATH.unshift ENV['ACTIONCONTROLLER_PATH']
-    begin
-      require 'action_controller'
-    rescue LoadError
-      abort "ActionController could not be found."
-    end
-  end
-end
-$:.unshift(File.dirname(__FILE__) + '/../lib')
-
-require 'action_dispatch/testing/test_process'
 require 'test/unit'
-require "ssl_requirement"
+require 'action_controller'
 
-ActionController::Base.logger = nil
-ActionController::Routing::Routes.reload rescue nil
+$:.unshift(File.dirname(__FILE__) + '/../lib')
+require "ssl_requirement"
 
 # several test controllers to cover different combinations of requiring/
 # allowing/exceptions-ing SSL for controller actions
-
-# this first controller modifies the flash in every action so that flash
-# set in set_flash is eventually expired (see NOTE below...)
 
 ROUTES = ActionDispatch::Routing::RouteSet.new
 ROUTES.draw do
@@ -39,9 +13,12 @@ ROUTES.draw do
 end
 ROUTES.finalize!
 
+# this first controller modifies the flash in every action so that flash
+# set in set_flash is eventually expired (see NOTE below...)
 
 class SslRequirementController < ActionController::Base
   include SslRequirement
+  include ROUTES.url_helpers
 
   ssl_required :a, :b
   ssl_allowed :c
@@ -78,6 +55,7 @@ end
 
 class SslExceptionController < ActionController::Base
   include SslRequirement
+  include ROUTES.url_helpers
 
   ssl_required  :a
   ssl_exceptions :b
@@ -106,6 +84,7 @@ end
 
 class SslAllActionsController < ActionController::Base
   include SslRequirement
+  include ROUTES.url_helpers
 
   ssl_exceptions
 
@@ -120,6 +99,7 @@ end
 
 class SslAllowAllActionsController < ActionController::Base
   include SslRequirement
+  include ROUTES.url_helpers
 
   ssl_allowed :all
 
@@ -161,8 +141,7 @@ end
 
 class SslRequirementTest < ActionController::TestCase
   def setup
-    @routes = ROUTES
-
+    @routes =  ROUTES
     @controller = SslRequirementController.new
     @ssl_host_override = 'www.example.com:80443'
     @non_ssl_host_override = 'www.example.com:8080'
